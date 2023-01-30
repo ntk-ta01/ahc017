@@ -105,5 +105,20 @@ fn main() {
     pool.join();
     const PRETESTNUM: i64 = 50;
     let total_score = *total_score.lock().unwrap();
-    println!("local_score:{}", total_score * PRETESTNUM / case_num);
+    let local_score = total_score * PRETESTNUM / case_num;
+    println!("local score:{}", add_separator(local_score.to_string()));
+}
+
+fn add_separator(score: String) -> String {
+    score
+        .chars()
+        .rev()
+        .collect::<Vec<char>>()
+        .chunks(3)
+        .map(|cs| cs.iter().collect::<String>())
+        .collect::<Vec<String>>()
+        .join(",")
+        .chars()
+        .rev()
+        .collect()
 }
