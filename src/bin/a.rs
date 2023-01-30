@@ -9,9 +9,9 @@ fn main() {
     let input = parse_input();
     let mut out: Output = vec![];
     'lp: for d in 0..input.d {
-        for _ in 0..input.k {
+        for _ in 0..(input.es.len() + input.d - 1) / input.d {
             out.push(d);
-            if out.len() == input.es.len() {
+            if out.len() >= input.es.len() {
                 break 'lp;
             }
         }
