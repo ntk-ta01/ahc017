@@ -1,0 +1,9 @@
+/testcases/
+
+/tools/in/
+/tools/out/
+/tools/src/bin/gen.rs
+/tools/src/bin/vis.rs
+/tools/src/lib.rs
+/tools/README.html
+/tools/README.md
