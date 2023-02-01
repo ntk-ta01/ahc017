@@ -154,36 +154,14 @@ fn compute_dist_matrix(input: &Input, out: &Output, day: usize) -> Vec<Vec<i64>>
 
 #[allow(dead_code)]
 fn compute_score(input: &Input, out: &Output) -> (i64, String, Vec<f64>) {
-    let mut count = vec![0; input.d + 1];
-    for i in 0..input.es.len() {
-        count[out[i]] += 1;
-    }
-    for (i, &ci) in count.iter().enumerate().skip(1) {
-        if ci > input.k {
-            return (
-                0,
-                format!(
-                    "The number of edges to be repaired on day {} has exceeded the limit. ({} > {})",
-                    i, ci, input.k
-                ),
-                vec![],
-            );
-        }
-    }
     let mut num = 0;
     let dist0 = compute_dist_matrix(input, out, !0);
     let mut fs = vec![];
-    let mut unreachable = false; // ntk add
     for day in 1..=input.d {
         let dist = compute_dist_matrix(input, out, day);
         let mut tmp = 0;
         for i in 0..input.ps.len() {
             for j in i + 1..input.ps.len() {
-                // ntk add
-                if dist[i][j] == INF {
-                    unreachable = true;
-                }
-                // ntk add
                 tmp += dist[i][j] - dist0[i][j];
             }
         }
@@ -192,15 +170,7 @@ fn compute_score(input: &Input, out: &Output) -> (i64, String, Vec<f64>) {
     }
     let den = input.d * input.ps.len() * (input.ps.len() - 1) / 2;
     let avg = num as f64 / den as f64 * 1000.0;
-    // ntk add
-    let ret = if unreachable {
-        String::from("unreachble")
-    } else {
-        String::new()
-    };
-    (avg.round() as i64, ret, fs)
-    // ntk add
-    // (avg.round() as i64, String::new(), fs)
+    (avg.round() as i64, String::new(), fs)
 }
 
 #[derive(Clone, Debug)]
