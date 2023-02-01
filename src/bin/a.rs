@@ -1,4 +1,4 @@
-// #![allow(clippy::uninlined_format_args)]
+#![allow(clippy::uninlined_format_args)]
 
 use rand::prelude::*;
 use std::collections::{BinaryHeap, HashSet, VecDeque};
@@ -14,7 +14,7 @@ fn main() {
     let input = parse_input();
     let out = greedy(&input, &mut rng);
     for &o in &out {
-        print!("{o} ");
+        print!("{} ", o);
     }
     // let (score, ret, _) = compute_score(&input, &out);
     // eprintln!("score: {score}");
