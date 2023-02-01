@@ -23,8 +23,7 @@ fn main() {
 fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
     let mut out = vec![0; input.es.len()];
     let mut day = 1;
-    let mut count = 0;
-    let mut is_selected = vec![false; input.es.len()];
+    let mut counts = vec![0; input.d + 1];
     let mut is_repaired_today = vec![false; input.es.len()];
     let mut is_bridge = vec![false; input.es.len()];
     let mut edges = (0..input.es.len()).collect::<VecDeque<_>>();
@@ -33,26 +32,24 @@ fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
             break;
         }
         // 工事する辺を決定
-        if edges.iter().all(|&e| is_selected[e] || is_bridge[e]) {
-            count = 0;
+        if edges.iter().all(|&e| is_bridge[e]) {
+            counts[day] = 0;
             day += 1;
             is_repaired_today = vec![false; input.es.len()];
             is_bridge = vec![false; input.es.len()];
             continue;
         }
         let mut edge = edges.pop_front().unwrap();
-        while is_selected[edge] || is_bridge[edge] {
+        while is_bridge[edge] {
             edges.push_back(edge);
             edge = edges.pop_front().unwrap();
         }
-        is_selected[edge] = true;
         is_repaired_today[edge] = true;
         out[edge] = day;
-        count += 1;
+        counts[day] += 1;
         // 工事する辺が閾値を超えたらdayを進める
         let upper = (input.es.len() + input.d - 1) / input.d + 20;
-        if upper.min(input.k) <= count {
-            count = 0;
+        if upper.min(input.k) <= counts[day] {
             day += 1;
             is_repaired_today = vec![false; input.es.len()];
             is_bridge = vec![false; input.es.len()];
