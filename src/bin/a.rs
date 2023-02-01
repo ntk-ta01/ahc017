@@ -16,7 +16,7 @@ fn main() {
     for &o in &out {
         print!("{o} ");
     }
-    // let (score, ret, _) = compute_score(&input, &out);
+    // let (score, _, _) = compute_score(&input, &out);
     // eprintln!("score: {score}");
 }
 
@@ -33,15 +33,14 @@ fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
             break;
         }
         // 工事する辺を決定
-        let mut edge = edges.pop_front().unwrap();
         if edges.iter().all(|&e| is_selected[e] || is_bridge[e]) {
-            edges.push_back(edge);
             count = 0;
             day += 1;
             is_repaired_today = vec![false; input.es.len()];
             is_bridge = vec![false; input.es.len()];
             continue;
         }
+        let mut edge = edges.pop_front().unwrap();
         while is_selected[edge] || is_bridge[edge] {
             edges.push_back(edge);
             edge = edges.pop_front().unwrap();
@@ -51,7 +50,8 @@ fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
         out[edge] = day;
         count += 1;
         // 工事する辺が閾値を超えたらdayを進める
-        if (input.es.len() + input.d - 1) / input.d <= count {
+        let upper = (input.es.len() + input.d - 1) / input.d + 20;
+        if upper.min(input.k) <= count {
             count = 0;
             day += 1;
             is_repaired_today = vec![false; input.es.len()];
