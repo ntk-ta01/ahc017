@@ -16,8 +16,9 @@ fn main() {
     for &o in &out {
         print!("{o} ");
     }
-    // let (score, _, _) = compute_score(&input, &out);
+    // let (score, ret, _) = compute_score(&input, &out);
     // eprintln!("score: {score}");
+    // eprintln!("{ret}");
 }
 
 fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
@@ -33,7 +34,6 @@ fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
         }
         // 工事する辺を決定
         if edges.iter().all(|&e| is_bridge[e]) {
-            counts[day] = 0;
             day += 1;
             is_repaired_today = vec![false; input.es.len()];
             is_bridge = vec![false; input.es.len()];
@@ -58,6 +58,40 @@ fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
         {
             let graph = get_graph(input, &out, day);
             let lowlink = LowLink::new(graph);
+            for (i, e) in input.es.iter().enumerate() {
+                if lowlink.bridges.contains(&(e.0, e.1)) {
+                    is_bridge[i] = true;
+                }
+            }
+        }
+    }
+    #[allow(clippy::needless_range_loop)]
+    for day in 1..=input.d {
+        if input.k <= counts[day] {
+            continue;
+        }
+        let mut is_bridge = vec![false; input.es.len()];
+        let mut graph = get_graph(input, &out, day);
+        let mut lowlink = LowLink::new(graph);
+        for (i, e) in input.es.iter().enumerate() {
+            if lowlink.bridges.contains(&(e.0, e.1)) {
+                is_bridge[i] = true;
+            }
+        }
+        while edges.iter().any(|&e| !is_bridge[e]) {
+            let mut edge = edges.pop_front().unwrap();
+            while is_bridge[edge] {
+                edges.push_back(edge);
+                edge = edges.pop_front().unwrap();
+            }
+            out[edge] = day;
+            counts[day] += 1;
+            if input.k <= counts[day] {
+                continue;
+            }
+            is_bridge = vec![false; input.es.len()];
+            graph = get_graph(input, &out, day);
+            lowlink = LowLink::new(graph);
             for (i, e) in input.es.iter().enumerate() {
                 if lowlink.bridges.contains(&(e.0, e.1)) {
                     is_bridge[i] = true;
