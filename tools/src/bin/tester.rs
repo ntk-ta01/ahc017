@@ -38,6 +38,11 @@ fn exec(file_path: PathBuf) -> i64 {
         let output = p.wait_with_output().unwrap();
         let mut file = fs::File::create(&out_file).unwrap();
         file.write_all(&output.stdout).unwrap();
+        // let b = String::from_utf8(output.stderr).unwrap();
+        // let s = b.split('\n').collect::<Vec<_>>();
+        // if s[s.len() - 2] == "unreachble" {
+        //     eprintln!("unreach {file_name}");
+        // }
     }
 
     let p = std::process::Command::new("cargo")
@@ -68,7 +73,7 @@ fn exec(file_path: PathBuf) -> i64 {
         score
     } else {
         eprintln!("failed {file_name}");
-        0
+        1_000_000_000_000
     }
 }
 
