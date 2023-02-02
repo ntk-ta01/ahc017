@@ -49,7 +49,7 @@ fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
         counts[day] += 1;
         // 工事する辺が閾値を超えたらdayを進める
         let upper = (input.es.len() + input.d - 1) / input.d;
-        if (upper + 20).min(input.k) <= counts[day] {
+        if (upper).min(input.k) <= counts[day] {
             day += 1;
             is_repaired_today = vec![false; input.es.len()];
             is_bridge = vec![false; input.es.len()];
@@ -87,7 +87,7 @@ fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
             out[edge] = day;
             counts[day] += 1;
             if input.k <= counts[day] {
-                continue;
+                break;
             }
             is_bridge = vec![false; input.es.len()];
             graph = get_graph(input, &out, day);
