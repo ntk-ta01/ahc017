@@ -68,11 +68,15 @@ fn exec(file_path: PathBuf) -> i64 {
     let output = p.wait_with_output().unwrap();
     let b = String::from_utf8(output.stdout).unwrap();
     let s = b.split('\n').collect::<Vec<_>>();
-    let score = s[0].split('=').collect::<Vec<_>>();
-    if let Ok(score) = score[1].trim().parse::<i64>() {
+    let score = s[0].split('=').collect::<Vec<_>>()[1]
+        .trim()
+        .parse::<i64>()
+        .unwrap();
+    let error = s[1];
+    if error.is_empty() {
         score
     } else {
-        eprintln!("failed {file_name}");
+        eprintln!("failed {file_name} because of {error}");
         1_000_000_000_000
     }
 }
