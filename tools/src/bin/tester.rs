@@ -8,11 +8,12 @@ use std::{
 };
 use threadpool::ThreadPool;
 
+// fn exec(file_path: PathBuf) -> (i64, i64) {
 fn exec(file_path: PathBuf) -> i64 {
     let file_name = file_path.file_name().unwrap().to_string_lossy();
     let in_file = format!("./tools/in/{file_name}");
     let out_file = format!("./tools/out/{file_name}");
-
+    // let loop_num =
     {
         // 実行部分
         let p = std::process::Command::new("cargo")
@@ -41,9 +42,10 @@ fn exec(file_path: PathBuf) -> i64 {
         // let b = String::from_utf8(output.stderr).unwrap();
         // let s = b.split('\n').collect::<Vec<_>>();
         // if s[s.len() - 2] == "unreachble" {
-        //     eprintln!("unreach {file_name}");
+        // eprintln!("unreach {file_name}");
         // }
-    }
+        // s[s.len() - 2].parse::<i64>().unwrap()
+    };
 
     let p = std::process::Command::new("cargo")
         .args([
@@ -74,9 +76,11 @@ fn exec(file_path: PathBuf) -> i64 {
         .unwrap();
     let error = s[1];
     if error.is_empty() {
+        // (score, loop_num)
         score
     } else {
         eprintln!("failed {file_name} because of {error}");
+        // (1_000_000_000_000, loop_num)
         1_000_000_000_000
     }
 }
@@ -99,15 +103,19 @@ fn main() {
     let pool = ThreadPool::new(12);
     let total_score = Arc::new(Mutex::new(0));
     let mut case_num = 0_i64;
+    // let loop_num = Arc::new(Mutex::new(0));
     for file in files {
         case_num += 1;
         let file = file.unwrap();
         let file_path = file.path();
         let total_score = total_score.clone();
+        // let loop_num = loop_num.clone();
         let pb = pb.clone();
         pool.execute(move || {
+            // let (score, l_num) = exec(file_path);
             let score = exec(file_path);
             *total_score.lock().unwrap() += score;
+            // *loop_num.lock().unwrap() += l_num;
             pb.lock().unwrap().inc(1);
         })
     }
@@ -116,6 +124,7 @@ fn main() {
     let total_score = *total_score.lock().unwrap();
     let local_score = total_score * PRETESTNUM / case_num;
     println!("local score:{}", add_separator(local_score.to_string()));
+    // println!("loop num(avg):{}", *loop_num.lock().unwrap() / case_num);
 }
 
 fn add_separator(score: String) -> String {

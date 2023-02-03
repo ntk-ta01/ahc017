@@ -24,7 +24,7 @@ fn main() {
 
 fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Timer) {
     let mut vs = vec![];
-    for _ in 0..5 {
+    for _ in 0..25 {
         let u = rng.gen_range(0, input.ps.len());
         let mut v = rng.gen_range(0, input.ps.len());
         while u == v {
@@ -55,7 +55,12 @@ fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Ti
     for i in 0..input.es.len() {
         counts[out[i]] += 1;
     }
-    while timer.get_time() < TIMELIMIT {
+    let mut c = 0;
+    loop {
+        c += 1;
+        if c % 100 == 0 && TIMELIMIT < timer.get_time() {
+            break;
+        }
         // 工事する辺をmoveする近傍
         // move先の日を決める
         let to_days = (1..=input.d)
@@ -113,6 +118,7 @@ fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Ti
             graphs[day_to] = get_graph(input, out, day_to);
         }
     }
+    // eprintln!("{c}");
 }
 
 fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
