@@ -4,7 +4,7 @@ use rand::prelude::*;
 use std::collections::{BinaryHeap, HashSet, VecDeque};
 
 const INF: i64 = 1000000000;
-const TIMELIMIT: f64 = 5.5;
+const TIMELIMIT: f64 = 5.45;
 
 type Output = Vec<usize>;
 
@@ -58,8 +58,23 @@ fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Ti
     let mut c = 0;
     loop {
         c += 1;
-        if c % 100 == 0 && TIMELIMIT < timer.get_time() {
-            break;
+        if c > 100 {
+            if rng.gen_bool(0.01) {
+                let mut vs2 = vec![];
+                for _ in 0..25 {
+                    let u = rng.gen_range(0, input.ps.len());
+                    let mut v = rng.gen_range(0, input.ps.len());
+                    while u == v {
+                        v = rng.gen_range(0, input.ps.len());
+                    }
+                    vs2.push((u, v));
+                }
+                vs = vs2;
+            }
+            if TIMELIMIT < timer.get_time() {
+                break;
+            }
+            c = 0;
         }
         // 工事する辺をmoveする近傍
         // move先の日を決める
