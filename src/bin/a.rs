@@ -4,15 +4,16 @@ use rand::prelude::*;
 use std::collections::{BinaryHeap, HashSet, VecDeque};
 
 const INF: i64 = 1000000000;
-// const TIMELIMIT: f64 = 6.0;
+const TIMELIMIT: f64 = 5.5;
 
 type Output = Vec<usize>;
 
 fn main() {
-    // let timer = Timer::new();
+    let timer = Timer::new();
     let mut rng = rand_chacha::ChaCha20Rng::seed_from_u64(0);
     let input = parse_input();
-    let out = greedy(&input, &mut rng);
+    let mut out = greedy(&input, &mut rng);
+    local_search(&input, &mut out, &mut rng, &timer);
     for &o in &out {
         print!("{} ", o);
     }
@@ -21,13 +22,111 @@ fn main() {
     // eprintln!("{ret}");
 }
 
+fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Timer) {
+    let mut vs = vec![];
+    for _ in 0..5 {
+        let u = rng.gen_range(0, input.ps.len());
+        let mut v = rng.gen_range(0, input.ps.len());
+        while u == v {
+            v = rng.gen_range(0, input.ps.len());
+        }
+        vs.push((u, v));
+    }
+    let mut graphs = {
+        let mut gs = vec![vec![]];
+        for day in 1..=input.d {
+            gs.push(get_graph(input, out, day));
+        }
+        gs
+    };
+    let mut paths = {
+        let mut paths = vec![0];
+        #[allow(clippy::needless_range_loop)]
+        for day in 1..=input.d {
+            let mut s = 0;
+            for &(u, v) in vs.iter() {
+                s += compute_path(&graphs[day], u, v);
+            }
+            paths.push(s);
+        }
+        paths
+    };
+    let mut counts = vec![0; input.d + 1];
+    for i in 0..input.es.len() {
+        counts[out[i]] += 1;
+    }
+    while timer.get_time() < TIMELIMIT {
+        // 工事する辺をmoveする近傍
+        // move先の日を決める
+        let to_days = (1..=input.d)
+            .filter(|&d| counts[d] < input.k)
+            .collect::<Vec<_>>();
+        if to_days.is_empty() {
+            break;
+        }
+        let day_to = to_days[rng.gen_range(0, to_days.len())];
+        // move先の日の橋を列挙する
+        let mut is_bridge = vec![false; input.es.len()];
+        {
+            let lowlink = LowLink::new(std::mem::take(&mut graphs[day_to]));
+            for (i, e) in input.es.iter().enumerate() {
+                if lowlink.bridges.contains(&(e.0, e.1)) {
+                    is_bridge[i] = true;
+                }
+            }
+        }
+        // move元の工事と、工事が行われる日を特定する
+        let day_from = rng.gen_range(1, input.d + 1);
+        let repairs = out
+            .iter()
+            .enumerate()
+            .filter(|(i, o)| **o == day_from && !is_bridge[*i])
+            .map(|(i, _)| i)
+            .collect::<Vec<_>>();
+        if repairs.is_empty() {
+            continue;
+        }
+        let e = repairs[rng.gen_range(0, repairs.len())];
+        out[e] = day_to;
+        // moveしたときの評価をする
+        let mut new_score_from = 0;
+        let graph_day_from = get_graph(input, out, day_from);
+        for &(u, v) in vs.iter() {
+            new_score_from += compute_path(&graph_day_from, u, v);
+        }
+        let mut new_score_to = 0;
+        let graph_day_to = get_graph(input, out, day_to);
+        for &(u, v) in vs.iter() {
+            new_score_to += compute_path(&graph_day_to, u, v);
+        }
+
+        let score = paths[day_from] + paths[day_to];
+        if score > new_score_from + new_score_to {
+            graphs[day_from] = graph_day_from;
+            graphs[day_to] = graph_day_to;
+            paths[day_from] = new_score_from;
+            paths[day_to] = new_score_to;
+            counts[day_from] -= 1;
+            counts[day_to] += 1;
+        } else {
+            out[e] = day_from;
+            graphs[day_to] = get_graph(input, out, day_to);
+        }
+    }
+}
+
 fn greedy<T: Rng>(input: &Input, rng: &mut T) -> Output {
     let mut out = vec![0; input.es.len()];
     let mut day = 1;
     let mut counts = vec![0; input.d + 1];
     let mut is_repaired_today = vec![false; input.es.len()];
     let mut is_bridge = vec![false; input.es.len()];
-    let mut edges = (0..input.es.len()).collect::<VecDeque<_>>();
+    let mut edges = (0..input.es.len()).collect::<Vec<_>>();
+    {
+        let g = get_graph(input, &out, 1);
+        edges.sort_by_key(|&i| std::cmp::min(g[input.es[i].0].len(), g[input.es[i].1].len()));
+    }
+    let mut edges = edges.into_iter().collect::<VecDeque<_>>();
     for _ in 0..input.es.len() {
         if input.d < day {
             break;
@@ -127,6 +226,36 @@ fn get_graph(input: &Input, out: &Output, day: usize) -> Vec<Vec<(usize, i64)>> 
         }
     }
     g
+}
+
+fn compute_path(g: &Vec<Vec<(usize, i64)>>, s: usize, t: usize) -> i64 {
+    // let mut prev = vec![!0, g.len()];
+    let mut dist = vec![INF; g.len()];
+    let mut que = BinaryHeap::new();
+    que.push((0, s));
+    dist[s] = 0;
+    while let Some((d, u)) = que.pop() {
+        let d = -d;
+        if dist[u] != d {
+            continue;
+        }
+        for &(v, w) in &g[u] {
+            let d2 = d + w;
+            if dist[v] > d2 {
+                dist[v] = d2;
+                // prev[v] = u;
+                que.push((-d2, v));
+            }
+        }
+    }
+    // let mut path = vec![];
+    // let mut cur = t;
+    // while cur != 0 {
+    //     path.push(cur);
+    //     cur = prev[cur];
+    // }
+    // path.reverse();
+    dist[t]
 }
 
 #[allow(dead_code)]
