@@ -4,7 +4,7 @@ use rand::prelude::*;
 use std::collections::{BinaryHeap, HashSet, VecDeque};
 
 const INF: i64 = 1000000000;
-const TIMELIMIT: f64 = 5.45;
+const TIMELIMIT: f64 = 5.5;
 
 type Output = Vec<usize>;
 
@@ -25,12 +25,11 @@ fn main() {
 fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Timer) {
     let mut vs = vec![];
     for _ in 0..25 {
-        let u = rng.gen_range(0, input.ps.len());
         let mut v = rng.gen_range(0, input.ps.len());
-        while u == v {
+        while vs.contains(&v) {
             v = rng.gen_range(0, input.ps.len());
         }
-        vs.push((u, v));
+        vs.push(v);
     }
     let mut graphs = {
         let mut gs = vec![vec![]];
@@ -44,8 +43,8 @@ fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Ti
         #[allow(clippy::needless_range_loop)]
         for day in 1..=input.d {
             let mut s = 0;
-            for &(u, v) in vs.iter() {
-                s += compute_path(&graphs[day], u, v);
+            for &v in vs.iter() {
+                s += compute_path(&graphs[day], v);
             }
             paths.push(s);
         }
@@ -59,18 +58,6 @@ fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Ti
     loop {
         c += 1;
         if c > 100 {
-            if rng.gen_bool(0.01) {
-                let mut vs2 = vec![];
-                for _ in 0..25 {
-                    let u = rng.gen_range(0, input.ps.len());
-                    let mut v = rng.gen_range(0, input.ps.len());
-                    while u == v {
-                        v = rng.gen_range(0, input.ps.len());
-                    }
-                    vs2.push((u, v));
-                }
-                vs = vs2;
-            }
             if TIMELIMIT < timer.get_time() {
                 break;
             }
@@ -111,13 +98,13 @@ fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Ti
         // moveしたときの評価をする
         let mut new_score_from = 0;
         let graph_day_from = get_graph(input, out, day_from);
-        for &(u, v) in vs.iter() {
-            new_score_from += compute_path(&graph_day_from, u, v);
+        for &v in vs.iter() {
+            new_score_from += compute_path(&graph_day_from, v);
         }
         let mut new_score_to = 0;
         let graph_day_to = get_graph(input, out, day_to);
-        for &(u, v) in vs.iter() {
-            new_score_to += compute_path(&graph_day_to, u, v);
+        for &v in vs.iter() {
+            new_score_to += compute_path(&graph_day_to, v);
         }
 
         let score = paths[day_from] + paths[day_to];
@@ -249,7 +236,7 @@ fn get_graph(input: &Input, out: &Output, day: usize) -> Vec<Vec<(usize, i64)>> 
     g
 }
 
-fn compute_path(g: &Vec<Vec<(usize, i64)>>, s: usize, t: usize) -> i64 {
+fn compute_path(g: &Vec<Vec<(usize, i64)>>, s: usize) -> i64 {
     // let mut prev = vec![!0, g.len()];
     let mut dist = vec![INF; g.len()];
     let mut que = BinaryHeap::new();
@@ -276,7 +263,7 @@ fn compute_path(g: &Vec<Vec<(usize, i64)>>, s: usize, t: usize) -> i64 {
     //     cur = prev[cur];
     // }
     // path.reverse();
-    dist[t]
+    dist.into_iter().sum()
 }
 
 #[allow(dead_code)]
