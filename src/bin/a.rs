@@ -13,7 +13,7 @@ fn main() {
     let mut rng = rand_chacha::ChaCha20Rng::seed_from_u64(0);
     let input = parse_input();
     let mut out = greedy(&input, &mut rng);
-    local_search(&input, &mut out, &mut rng, &timer);
+    annealing(&input, &mut out, &mut rng, &timer);
     for &o in &out {
         print!("{} ", o);
     }
@@ -22,9 +22,9 @@ fn main() {
     // eprintln!("{ret}");
 }
 
-fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Timer) {
+fn annealing<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Timer) {
     let mut vs = vec![];
-    for _ in 0..25 {
+    for _ in 0..5 {
         let mut v = rng.gen_range(0, input.ps.len());
         while vs.contains(&v) {
             v = rng.gen_range(0, input.ps.len());
@@ -54,13 +54,26 @@ fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Ti
     for i in 0..input.es.len() {
         counts[out[i]] += 1;
     }
+
+    const T0: f64 = 10000.0;
+    const T1: f64 = 100.0;
+    let mut temp = T0;
+    let mut prob;
+
+    let mut best_out = out.clone();
+    let mut best_score = paths.iter().sum::<i64>();
+
+    let mut now_score = best_score;
+
     let mut c = 0;
     loop {
         c += 1;
         if c > 100 {
-            if TIMELIMIT < timer.get_time() {
+            let passed = timer.get_time() / TIMELIMIT;
+            if passed >= 1.0 {
                 break;
             }
+            temp = T0.powf(1.0 - passed) * T1.powf(passed);
             c = 0;
         }
         // 工事する辺をmoveする近傍
@@ -107,8 +120,13 @@ fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Ti
             new_score_to += compute_path(&graph_day_to, v);
         }
 
-        let score = paths[day_from] + paths[day_to];
-        if score > new_score_from + new_score_to {
+        let new_score = paths.iter().sum::<i64>() + new_score_from + new_score_to
+            - paths[day_from]
+            - paths[day_to];
+
+        prob = f64::exp((now_score - new_score) as f64 / temp);
+        if now_score > new_score || rng.gen_bool(prob) {
+            now_score = new_score;
             graphs[day_from] = graph_day_from;
             graphs[day_to] = graph_day_to;
             paths[day_from] = new_score_from;
@@ -119,7 +137,13 @@ fn local_search<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Ti
             out[e] = day_from;
             graphs[day_to] = get_graph(input, out, day_to);
         }
+
+        if best_score > now_score {
+            best_score = now_score;
+            best_out = out.clone();
+        }
     }
+    *out = best_out;
     // eprintln!("{c}");
 }
 
