@@ -4,7 +4,7 @@ use rand::prelude::*;
 use std::collections::{BinaryHeap, HashSet, VecDeque};
 
 const INF: i64 = 1000000000;
-const TIMELIMIT: f64 = 5.5;
+const TIMELIMIT: f64 = 5.9;
 
 type Output = Vec<usize>;
 
@@ -68,11 +68,11 @@ fn annealing<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Timer
     let mut c = 0;
     loop {
         c += 1;
+        let passed = timer.get_time() / TIMELIMIT;
+        if passed >= 1.0 {
+            break;
+        }
         if c > 100 {
-            let passed = timer.get_time() / TIMELIMIT;
-            if passed >= 1.0 {
-                break;
-            }
             temp = T0.powf(1.0 - passed) * T1.powf(passed);
             c = 0;
         }
@@ -85,22 +85,12 @@ fn annealing<T: Rng>(input: &Input, out: &mut Output, rng: &mut T, timer: &Timer
             break;
         }
         let day_to = to_days[rng.gen_range(0, to_days.len())];
-        // move先の日の橋を列挙する
-        let mut is_bridge = vec![false; input.es.len()];
-        {
-            let lowlink = LowLink::new(std::mem::take(&mut graphs[day_to]));
-            for (i, e) in input.es.iter().enumerate() {
-                if lowlink.bridges.contains(&(e.0, e.1)) {
-                    is_bridge[i] = true;
-                }
-            }
-        }
         // move元の工事と、工事が行われる日を特定する
         let day_from = rng.gen_range(1, input.d + 1);
         let repairs = out
             .iter()
             .enumerate()
-            .filter(|(i, o)| **o == day_from && !is_bridge[*i])
+            .filter(|(_, o)| **o == day_from)
             .map(|(i, _)| i)
             .collect::<Vec<_>>();
         if repairs.is_empty() {
